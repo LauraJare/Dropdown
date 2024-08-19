@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADD NEW SOCIAL VALUE BID</title>
+    <style>
+      /* Simple styling for the popup */
+      .popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 1px solid #ccc;
+        padding: 20px;
+        background-color: white;
+        z-index: 1000;
+      }
+
+      .popup input {
+        margin-bottom: 10px;
+      }
+
+      .popup button {
+        margin-right: 10px;
+      }
+
+      .overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+      }
+
+      textarea {
+        width: 300px; /* Set the width of the textarea */
+        box-sizing: border-box;
+        overflow-y: hidden; /* Hide the scrollbar */
+        resize: none; /* Disable manual resizing */
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>ADD NEW SOCIAL VALUE BID</h2>
+
+    <form name="form1" id="form1" action="/action_page.php">
+      Contract ID:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+        <!-- Initial empty option -->
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      <br /><br />
+      Theme:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+        <!-- Initial empty option -->
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      <br /><br />
+      Reference:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+        <!-- Initial empty option -->
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      <br /><br />
+      Activity Description:
+      <textarea
+        id="text"
+        name="text"
+        rows="1"
+        cols="50"
+        placeholder="Type text here..."
+      ></textarea>
+      <br /><br />
+      Status:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+        <!-- Initial empty option -->
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      <br /><br />
+      Proxy Unit:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+        <!-- Initial empty option -->
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      Proxy value £
+      <input type="number" id="numberInput" step="0.01" value="0" />
+      <br /><br />
+      Committed Units:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      Committed Value per Activity: £
+      <input type="number" id="numberInput" step="0.01" value="0" />
+      <br /><br />
+      Delivered Units:
+      <select class="editable-dropdown">
+        <option value="" selected disabled>Select an option</option>
+
+        <option value="Option 1">Option 1</option>
+        <option value="Option 2">Option 2</option>
+        <option value="Option 3">Option 3</option>
+        <option value="edit">Edit Options</option>
+      </select>
+      Delivered Value per Activity: £
+      <input type="number" id="deliveredValue" step="0.01" value="0" />
+      <br /><br />
+      Start Date:
+      <input type="date" />
+      <br /><br />
+      End Date:
+      <input type="date" />
+      <br /><br />
+
+      <input type="submit" value="Submit" />
+    </form>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="popup" id="popup">
+      <h3>Edit Dropdown Options</h3>
+      <div id="optionsList"></div>
+      <input type="text" id="newOption" placeholder="Add new option" />
+      <button id="addOptionBtn">Add</button>
+      <button id="closePopupBtn">Close</button>
+    </div>
+
+    <script>
+      // References to HTML elements
+      const dropdowns = document.querySelectorAll(".editable-dropdown");
+      const popup = document.getElementById("popup");
+      const overlay = document.getElementById("overlay");
+      const optionsList = document.getElementById("optionsList");
+      const newOptionInput = document.getElementById("newOption");
+      const addOptionBtn = document.getElementById("addOptionBtn");
+      const closePopupBtn = document.getElementById("closePopupBtn");
+
+      let currentDropdown; // Variable to keep track of the current dropdown being edited
+
+      // Load options from local storage on page load
+      function loadOptions() {
+        dropdowns.forEach((dropdown, index) => {
+          const savedOptions = JSON.parse(
+            localStorage.getItem(`dropdown_${index}`)
+          );
+          if (savedOptions) {
+            dropdown.innerHTML = ""; // Clear existing options
+            savedOptions.forEach((option) => {
+              const newOption = document.createElement("option");
+              newOption.text = option;
+              dropdown.add(newOption);
+            });
+            // Add the edit option back
+            const editOption = document.createElement("option");
+            editOption.value = "edit";
+            editOption.text = "Edit Options";
+            dropdown.add(editOption);
+          }
+        });
+      }
+
+      // Save options to local storage
+      function saveOptions() {
+        dropdowns.forEach((dropdown, index) => {
+          const optionsArray = [];
+          for (let i = 0; i < dropdown.options.length; i++) {
+            const option = dropdown.options[i];
+            if (option.value !== "edit") {
+              // Skip the edit option
+              optionsArray.push(option.text);
+            }
+          }
+          localStorage.setItem(
+            `dropdown_${index}`,
+            JSON.stringify(optionsArray)
+          );
+        });
+      }
+
+      // Show popup function
+      function showPopup() {
+        optionsList.innerHTML = ""; // Clear previous options
+
+        // Populate the list with current dropdown options
+        for (let i = 0; i < currentDropdown.options.length; i++) {
+          const option = currentDropdown.options[i];
+          if (option.value === "edit") continue; // Skip the Edit option
+
+          const optionDiv = document.createElement("div");
+          optionDiv.style.marginBottom = "5px";
+          optionDiv.textContent = option.text;
+
+          // Add a remove button for each option
+          const removeBtn = document.createElement("button");
+          removeBtn.textContent = "Remove";
+          removeBtn.style.marginLeft = "10px";
+          removeBtn.onclick = function () {
+            currentDropdown.remove(i);
+            saveOptions(); // Save updated options to local storage
+            showPopup(); // Refresh the popup after removal
+          };
+
+          optionDiv.appendChild(removeBtn);
+          optionsList.appendChild(optionDiv);
+        }
+
+        popup.style.display = "block";
+        overlay.style.display = "block";
+      }
+
+      // Hide popup function
+      function hidePopup() {
+        popup.style.display = "none";
+        overlay.style.display = "none";
+      }
+
+      // Add new option function
+      addOptionBtn.onclick = function () {
+        const newOptionText = newOptionInput.value.trim();
+        if (newOptionText) {
+          const newOption = document.createElement("option");
+          newOption.text = newOptionText;
+          currentDropdown.add(newOption, currentDropdown.options.length - 1); // Add before the Edit option
+          newOptionInput.value = ""; // Clear the input field
+          showPopup(); // Refresh the popup to show the new option
+          saveOptions(); // Save updated options to local storage
+        }
+      };
+
+      // Attach event listeners to all dropdowns
+      dropdowns.forEach((dropdown) => {
+        dropdown.onchange = function () {
+          if (dropdown.value === "edit") {
+            currentDropdown = dropdown; // Set the current dropdown being edited
+            showPopup();
+            dropdown.value = ""; // Reset dropdown to not select "edit"
+          }
+        };
+      });
+
+      closePopupBtn.onclick = hidePopup;
+      overlay.onclick = hidePopup; // Close popup if overlay is clicked
+
+      // Get the textarea
+      const textarea = document.getElementById("text");
+
+      // Function to auto-resize the textarea
+      function autoResize() {
+        textarea.style.height = "auto"; // Reset the height
+        textarea.style.height = textarea.scrollHeight + "px"; // Set height based on content
+      }
+
+      // Event listener for input event
+      textarea.addEventListener("input", autoResize);
+
+      // Call loadOptions on page load
+      window.addEventListener("load", () => {
+        loadOptions();
+        autoResize(); // Ensure text area auto-resizes on load
+      });
+    </script>
+  </body>
+</html>
